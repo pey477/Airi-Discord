@@ -41,10 +41,39 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
    ```
 
    Set `DISCORD_GUILD_ID` for fast registration in one test server. Leave it empty for global registration.
-
 6. Start the bot with `npm start`.
 
 For local development, use `npm run dev`.
+
+## Deploy to Railway
+
+Airi is a long-running Discord worker, not an HTTP web server. Deploy it as one Railway service and do not configure a public domain or HTTP healthcheck.
+
+1. Push this repository to GitHub and sign in to [Railway](https://railway.com/).
+2. Create a new project, choose **Deploy from GitHub repo**, and select `pey477/Airi-Discord`.
+3. Keep the service root directory as `/`. Railway detects the root `Dockerfile`; it installs FFmpeg, builds the TypeScript app, and starts `node dist/index.js`.
+4. Open the service's **Variables** page and add the required variables:
+
+   | Variable | Value |
+   | --- | --- |
+   | `DISCORD_TOKEN` | Bot token from Discord Developer Portal |
+   | `DISCORD_CLIENT_ID` | Discord application ID |
+   | `OPENAI_API_KEY` | OpenAI API key |
+
+5. Add these optional variables only if Supabase persistence is configured:
+
+   | Variable | Value |
+   | --- | --- |
+   | `SUPABASE_URL` | Supabase project URL |
+   | `SUPABASE_SECRET_KEY` | Supabase secret key; keep private |
+
+   The Supabase SQL in `supabase/schema.sql` must be run in the Supabase SQL Editor before enabling persistence. Both Supabase variables must be set together or both left empty.
+
+6. Optional model and voice settings can be added as Railway variables. Defaults are `OPENAI_CHAT_MODEL=gpt-4o-mini`, `OPENAI_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe`, `OPENAI_TTS_MODEL=gpt-4o-mini-tts`, and `OPENAI_TTS_VOICE=nova`. Voice capture defaults to `VOICE_MAX_SECONDS=18` and `VOICE_SILENCE_MS=1100`.
+7. In service deployment settings, set the restart policy to **On Failure** (or **Always**) and keep the replica count at **1**. Multiple replicas would create multiple Discord bot sessions using the same token.
+8. Trigger deployment. Check the deployment logs for `Airi is online as ...`. If startup fails, verify the required variables and inspect the first error in the logs.
+
+**Important:** GitHub Actions repository secrets are not automatically copied to Railway. Add the required values in Railway Variables as well. Never put credentials in source files, commit messages, or chat.
 
 ## Docker
 
@@ -63,7 +92,7 @@ Voice capture is capped by `VOICE_MAX_SECONDS`. Without Supabase credentials, co
 
 ## Current limitations
 
-- No persistent database; restart clears conversation context.
+- Without Supabase, restarting the bot clears conversation context.
 - Voice receive behavior depends on Discord voice networking and should be tested in a real server.
 - Only one bot voice session per server is supported.
 - The bot does not automatically join voice channels.
