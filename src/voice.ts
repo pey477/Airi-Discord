@@ -11,6 +11,7 @@ import {
 } from "@discordjs/voice";
 import type { VoiceBasedChannel } from "discord.js";
 import { Readable } from "node:stream";
+import { once } from "node:events";
 import prism from "prism-media";
 import { askAiri, synthesizeSpeech, transcribePcmWav } from "./ai.js";
 import { pcmToWav } from "./audio.js";
@@ -62,6 +63,7 @@ export async function joinVoice(channel: VoiceBasedChannel): Promise<void> {
     const chunks: Buffer[] = [];
     let totalBytes = 0;
     let tooLong = false;
+    let processing = false;
 
     audio.pipe(decoder);
     decoder.on("data", (chunk: Buffer) => {
@@ -80,7 +82,12 @@ export async function joinVoice(channel: VoiceBasedChannel): Promise<void> {
       busySpeakers.delete(speakerKey);
     });
 
+    decoder.once("close", () => {
+      if (!processing) busySpeakers.delete(speakerKey);
+    });
+
     decoder.once("end", () => {
+      processing = true;
       void (async () => {
         try {
           if (tooLong || totalBytes < 8_000 || !sessions.has(guildId)) return;
@@ -103,7 +110,7 @@ async function queueSpeech(session: GuildVoice, mp3: Buffer): Promise<void> {
   session.speechQueue = session.speechQueue.then(async () => {
     if (session.connection.state.status !== VoiceConnectionStatus.Ready) return;
     const resource = createAudioResource(Readable.from([mp3]), { inputType: StreamType.Arbitrary });
-    const finished = entersState(session.player, AudioPlayerStatus.Idle, 90_000).catch(() => undefined);
+    const finished = once(session.player, AudioPlayerStatus.Idle);
     session.player.play(resource);
     await finished;
   }).catch((error: unknown) => {
