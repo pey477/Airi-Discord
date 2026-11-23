@@ -23,5 +23,4 @@ jobs:
         env:
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
           DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           DISCORD_GUILD_ID: ${{ vars.DISCORD_GUILD_ID }}
