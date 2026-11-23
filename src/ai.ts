@@ -8,7 +8,11 @@ import {
   type ConversationMessage
 } from "./memory.js";
 
-const openai = new OpenAI({ apiKey: config.OPENAI_API_KEY });
+// Groq exposes an OpenAI-compatible Chat Completions API.
+const groq = new OpenAI({
+  apiKey: config.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1"
+});
 const histories = new Map<string, ConversationMessage[]>();
 const pending = new Map<string, Promise<string>>();
 const MAX_TURNS = 12;
@@ -25,12 +29,19 @@ function historyKey(guildId: string, userId: string): string {
   return guildId + ":" + userId;
 }
 
+function getOpenAIForVoice(): OpenAI {
+  if (!config.OPENAI_API_KEY) {
+    throw new Error("Voice transcription and speech currently require OPENAI_API_KEY. Text chat uses Groq and does not need OpenAI billing.");
+  }
+  return new OpenAI({ apiKey: config.OPENAI_API_KEY });
+}
+
 async function generateReply(guildId: string, userId: string, prompt: string): Promise<string> {
   const key = historyKey(guildId, userId);
   const storedHistory = await loadConversation(guildId, userId);
   const history = storedHistory ?? histories.get(key) ?? [];
-  const response = await openai.chat.completions.create({
-    model: config.OPENAI_CHAT_MODEL,
+  const response = await groq.chat.completions.create({
+    model: config.GROQ_CHAT_MODEL,
     messages: [
       { role: "system", content: systemPrompt },
       ...history,
@@ -66,6 +77,7 @@ export async function askAiri(guildId: string, userId: string, prompt: string): 
 }
 
 export async function transcribePcmWav(wav: Buffer): Promise<string> {
+  const openai = getOpenAIForVoice();
   const file = await toFile(wav, "discord-voice.wav", { type: "audio/wav" });
   const result = await openai.audio.transcriptions.create({
     file,
@@ -75,6 +87,7 @@ export async function transcribePcmWav(wav: Buffer): Promise<string> {
 }
 
 export async function synthesizeSpeech(text: string): Promise<Buffer> {
+  const openai = getOpenAIForVoice();
   const response = await openai.audio.speech.create({
     model: config.OPENAI_TTS_MODEL,
     voice: config.OPENAI_TTS_VOICE as "alloy",
