@@ -11,7 +11,19 @@ const envSchema = z.object({
   OPENAI_TTS_MODEL: z.string().default("gpt-4o-mini-tts"),
   OPENAI_TTS_VOICE: z.enum(["alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"]).default("nova"),
   VOICE_MAX_SECONDS: z.coerce.number().int().min(5).max(30).default(18),
-  VOICE_SILENCE_MS: z.coerce.number().int().min(500).max(3000).default(1100)
+  VOICE_SILENCE_MS: z.coerce.number().int().min(500).max(3000).default(1100),
+  SUPABASE_URL: z.string().url().optional().default(""),
+  SUPABASE_SECRET_KEY: z.string().optional().default("")
+}).superRefine((value, context) => {
+  const hasUrl = value.SUPABASE_URL.length > 0;
+  const hasKey = value.SUPABASE_SECRET_KEY.length > 0;
+  if (hasUrl !== hasKey) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "SUPABASE_URL and SUPABASE_SECRET_KEY must both be set or both be empty.",
+      path: [hasUrl ? "SUPABASE_SECRET_KEY" : "SUPABASE_URL"]
+    });
+  }
 });
 
 const parsed = envSchema.safeParse(process.env);

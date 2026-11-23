@@ -64,7 +64,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.commandName === "reset") {
-      clearHistory(interaction.guildId, interaction.user.id);
+      await clearHistory(interaction.guildId, interaction.user.id);
       await interaction.reply({ content: "Riwayat percakapanmu sudah direset.", flags: MessageFlags.Ephemeral });
     }
   } catch (error) {

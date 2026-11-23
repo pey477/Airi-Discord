@@ -7,10 +7,10 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
 - `/ask` — chat with Airi in the language you use.
 - `/join` — join the voice channel you're currently in, transcribe speech, generate an answer, and speak it back.
 - `/leave` — leave the current voice channel.
-- `/reset` — clear your in-memory conversation history for the current server.
+- `/reset` — clear your conversation history for the current server, including Supabase when configured.
 - `/ping` — check bot responsiveness.
 - `/help` — show the command guide.
-- Per-server, per-user conversation context (in memory; resets when the process restarts).
+- Per-server, per-user conversation context (in memory by default; optional Supabase persistence).
 - Voice responses are queued per server to avoid overlapping playback.
 
 ## Requirements
@@ -59,7 +59,7 @@ docker run --env-file .env airi-discord
 
 Voice mode is turn-based, not continuous full-duplex conversation. Airi receives a speaker's audio while connected, waits for a silence boundary, transcribes it, generates a reply, then plays synthesized speech. Users should be informed when voice capture is active. Do not deploy voice capture in a channel without the participants' knowledge and consent.
 
-Voice capture is capped by `VOICE_MAX_SECONDS`. Conversation history is currently stored only in process memory and is not shared across users or servers. Persistent memory, moderation controls, and production observability are not implemented yet.
+Voice capture is capped by `VOICE_MAX_SECONDS`. Without Supabase credentials, conversation history stays in process memory. With Supabase configured, Airi stores up to 12 user/assistant turns per Discord server and user. The bot uses a server-side Supabase secret key; never put it in a public client or commit it.
 
 ## Current limitations
 

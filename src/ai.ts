@@ -1,9 +1,16 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
 import { config } from "./config.js";
+import {
+  deleteConversation,
+  loadConversation,
+  saveConversation,
+  type ConversationMessage
+} from "./memory.js";
 
 const openai = new OpenAI({ apiKey: config.OPENAI_API_KEY });
-const histories = new Map<string, Array<{ role: "user" | "assistant"; content: string }>>();
+const histories = new Map<string, ConversationMessage[]>();
+const pending = new Map<string, Promise<string>>();
 const MAX_TURNS = 12;
 
 const systemPrompt = [
@@ -18,9 +25,10 @@ function historyKey(guildId: string, userId: string): string {
   return guildId + ":" + userId;
 }
 
-export async function askAiri(guildId: string, userId: string, prompt: string): Promise<string> {
+async function generateReply(guildId: string, userId: string, prompt: string): Promise<string> {
   const key = historyKey(guildId, userId);
-  const history = histories.get(key) ?? [];
+  const storedHistory = await loadConversation(guildId, userId);
+  const history = storedHistory ?? histories.get(key) ?? [];
   const response = await openai.chat.completions.create({
     model: config.OPENAI_CHAT_MODEL,
     messages: [
@@ -35,9 +43,26 @@ export async function askAiri(guildId: string, userId: string, prompt: string): 
   const answer = response.choices[0]?.message.content?.trim();
   if (!answer) throw new Error("The AI returned an empty response.");
 
-  history.push({ role: "user", content: prompt }, { role: "assistant", content: answer });
-  histories.set(key, history.slice(-MAX_TURNS * 2));
+  const nextHistory = [
+    ...history,
+    { role: "user" as const, content: prompt },
+    { role: "assistant" as const, content: answer }
+  ].slice(-MAX_TURNS * 2);
+  histories.set(key, nextHistory);
+  await saveConversation(guildId, userId, nextHistory);
   return answer;
+}
+
+export async function askAiri(guildId: string, userId: string, prompt: string): Promise<string> {
+  const key = historyKey(guildId, userId);
+  const previous = pending.get(key) ?? Promise.resolve("");
+  const task = previous.catch(() => "").then(() => generateReply(guildId, userId, prompt));
+  pending.set(key, task);
+  try {
+    return await task;
+  } finally {
+    if (pending.get(key) === task) pending.delete(key);
+  }
 }
 
 export async function transcribePcmWav(wav: Buffer): Promise<string> {
@@ -59,6 +84,8 @@ export async function synthesizeSpeech(text: string): Promise<Buffer> {
   return Buffer.from(await response.arrayBuffer());
 }
 
-export function clearHistory(guildId: string, userId: string): void {
-  histories.delete(historyKey(guildId, userId));
+export async function clearHistory(guildId: string, userId: string): Promise<void> {
+  const key = historyKey(guildId, userId);
+  histories.delete(key);
+  await deleteConversation(guildId, userId);
 }
