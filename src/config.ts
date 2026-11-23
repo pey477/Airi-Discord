@@ -12,7 +12,11 @@ const envSchema = z.object({
   OPENAI_TTS_VOICE: z.enum(["alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"]).default("nova"),
   VOICE_MAX_SECONDS: z.coerce.number().int().min(5).max(30).default(18),
   VOICE_SILENCE_MS: z.coerce.number().int().min(500).max(3000).default(1100),
-  SUPABASE_URL: z.string().url().optional().default(""),
+  // Treat an empty Railway variable as unset; z.string().url() rejects "".
+  SUPABASE_URL: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().url().optional()
+  ).transform((value) => value ?? ""),
   SUPABASE_SECRET_KEY: z.string().optional().default("")
 }).superRefine((value, context) => {
   const hasUrl = value.SUPABASE_URL.length > 0;
