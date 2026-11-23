@@ -5,7 +5,7 @@ const envSchema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_GUILD_ID: z.string().optional().default(""),
-  GROQ_API_KEY: z.string().min(1),
+  GROQ_API_KEY: z.string().optional().default(""),
   GROQ_CHAT_MODEL: z.string().default("openai/gpt-oss-20b"),
   // Optional: only needed for the current paid OpenAI-based voice pipeline.
   OPENAI_API_KEY: z.string().optional().default(""),
