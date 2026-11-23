@@ -5,8 +5,10 @@ const envSchema = z.object({
   DISCORD_TOKEN: z.string().min(1),
   DISCORD_CLIENT_ID: z.string().min(1),
   DISCORD_GUILD_ID: z.string().optional().default(""),
-  OPENAI_API_KEY: z.string().min(1),
-  OPENAI_CHAT_MODEL: z.string().default("gpt-4o-mini"),
+  GROQ_API_KEY: z.string().min(1),
+  GROQ_CHAT_MODEL: z.string().default("openai/gpt-oss-20b"),
+  // Optional: only needed for the current paid OpenAI-based voice pipeline.
+  OPENAI_API_KEY: z.string().optional().default(""),
   OPENAI_TRANSCRIPTION_MODEL: z.string().default("gpt-4o-mini-transcribe"),
   OPENAI_TTS_MODEL: z.string().default("gpt-4o-mini-tts"),
   OPENAI_TTS_VOICE: z.enum(["alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"]).default("nova"),
