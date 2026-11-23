@@ -10,7 +10,7 @@ import {
 
 // Groq exposes an OpenAI-compatible Chat Completions API.
 const groq = new OpenAI({
-  apiKey: config.GROQ_API_KEY,
+  apiKey: config.GROQ_API_KEY || "groq-api-key-not-configured",
   baseURL: "https://api.groq.com/openai/v1"
 });
 const histories = new Map<string, ConversationMessage[]>();
@@ -37,6 +37,9 @@ function getOpenAIForVoice(): OpenAI {
 }
 
 async function generateReply(guildId: string, userId: string, prompt: string): Promise<string> {
+  if (!config.GROQ_API_KEY) {
+    throw new Error("GROQ_API_KEY is not configured. Add a free Groq API key in Railway Variables to enable /ask.");
+  }
   const key = historyKey(guildId, userId);
   const storedHistory = await loadConversation(guildId, userId);
   const history = storedHistory ?? histories.get(key) ?? [];
