@@ -7,11 +7,9 @@ const envSchema = z.object({
   DISCORD_GUILD_ID: z.string().optional().default(""),
   GROQ_API_KEY: z.string().optional().default(""),
   GROQ_CHAT_MODEL: z.string().default("openai/gpt-oss-20b"),
-  // Optional: only needed for the current paid OpenAI-based voice pipeline.
-  OPENAI_API_KEY: z.string().optional().default(""),
-  OPENAI_TRANSCRIPTION_MODEL: z.string().default("gpt-4o-mini-transcribe"),
-  OPENAI_TTS_MODEL: z.string().default("gpt-4o-mini-tts"),
-  OPENAI_TTS_VOICE: z.enum(["alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"]).default("nova"),
+  GROQ_TRANSCRIPTION_MODEL: z.string().default("whisper-large-v3-turbo"),
+  EDGE_TTS_VOICE: z.string().default("id-ID-GadisNeural"),
+  EDGE_TTS_LANG: z.string().default("id-ID"),
   VOICE_MAX_SECONDS: z.coerce.number().int().min(5).max(30).default(18),
   VOICE_SILENCE_MS: z.coerce.number().int().min(500).max(3000).default(1100),
   // Treat an empty Railway variable as unset; z.string().url() rejects "".

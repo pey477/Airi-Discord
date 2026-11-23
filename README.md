@@ -5,7 +5,7 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
 ## Features
 
 - `/ask` — chat with Airi in the language you use, powered by Groq.
-- `/join` — join the voice channel you're currently in, transcribe speech, generate an answer, and speak it back. The current transcription and speech pipeline uses OpenAI and is optional.
+- `/join` — join the voice channel you're currently in, transcribe speech with Groq Whisper, generate an answer, and speak it back with an Indonesian female Edge TTS voice.
 - `/leave` — leave the current voice channel.
 - `/reset` — clear your conversation history for the current server, including Supabase when configured.
 - `/ping` — check bot responsiveness.
@@ -18,8 +18,8 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
 - Node.js 22+
 - FFmpeg available on PATH for MP3 playback
 - A Discord application and bot token
-- A Groq API key for text chat (free tier available)
-- Optional OpenAI API key for the current voice transcription and text-to-speech pipeline
+- A Groq API key for text chat and speech transcription
+- Edge TTS network access for speech synthesis; no separate API key is needed
 
 ## Setup
 
@@ -60,7 +60,7 @@ Airi is a long-running Discord worker, not an HTTP web server. Deploy it as one 
    | `DISCORD_CLIENT_ID` | Discord application ID |
    | `GROQ_API_KEY` | API key from Groq Console |
 
-4. Add `OPENAI_API_KEY` only if you want to use the existing paid voice transcription and text-to-speech features. Text chat works without it.
+4. No OpenAI key is required. Groq handles chat and voice transcription; Edge TTS generates speech using the default Indonesian female voice `id-ID-GadisNeural`.
 5. Add these optional variables only if Supabase persistence is configured:
 
    | Variable | Value |
@@ -69,7 +69,7 @@ Airi is a long-running Discord worker, not an HTTP web server. Deploy it as one 
    | `SUPABASE_SECRET_KEY` | Supabase secret key; keep private |
 
    The Supabase SQL in `supabase/schema.sql` must be run in the Supabase SQL Editor before enabling persistence. Both Supabase variables must be set together or both left empty.
-6. Optional model and voice settings: `GROQ_CHAT_MODEL=openai/gpt-oss-20b`, `OPENAI_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe`, `OPENAI_TTS_MODEL=gpt-4o-mini-tts`, and `OPENAI_TTS_VOICE=nova`. Voice capture defaults to `VOICE_MAX_SECONDS=18` and `VOICE_SILENCE_MS=1100`.
+6. Optional model and voice settings: `GROQ_CHAT_MODEL=openai/gpt-oss-20b`, `GROQ_TRANSCRIPTION_MODEL=whisper-large-v3-turbo`, `EDGE_TTS_VOICE=id-ID-GadisNeural`, and `EDGE_TTS_LANG=id-ID`. Voice capture defaults to `VOICE_MAX_SECONDS=18` and `VOICE_SILENCE_MS=1100`.
 7. In service deployment settings, set the restart policy to **On Failure** (or **Always**) and keep the replica count at **1**. Multiple replicas would create multiple Discord bot sessions using the same token.
 8. Trigger deployment. Check the deployment logs for `Airi is online as ...`. If startup fails, verify the required variables and inspect the first error in the logs.
 9. Register Discord slash commands from GitHub without needing a local computer: open the repository's **Actions** tab, select **Register Discord Commands**, choose **Run workflow**, then run it on `main`. This workflow uses the repository's `DISCORD_TOKEN` and `DISCORD_CLIENT_ID` Actions secrets. For fast guild-only registration, optionally add a GitHub Actions variable named `DISCORD_GUILD_ID`; otherwise commands are registered globally.
@@ -87,14 +87,17 @@ docker run --env-file .env airi-discord
 
 ## Voice behavior and privacy
 
-Voice mode is turn-based, not continuous full-duplex conversation. Airi receives a speaker's audio while connected, waits for a silence boundary, transcribes it, generates a reply, then plays synthesized speech. The current transcription and speech synthesis calls use OpenAI and may incur charges. Users should be informed when voice capture is active. Do not deploy voice capture in a channel without the participants' knowledge and consent.
+Voice mode is turn-based, not continuous full-duplex conversation. Airi receives a speaker's audio while connected, waits for a silence boundary, transcribes it, generates a reply, then plays synthesized speech. Groq handles transcription and Edge TTS handles speech synthesis. The Edge TTS integration uses Microsoft's online Read Aloud service without a separate API key; it is an unofficial integration and may be throttled or changed by the service. Groq usage remains subject to the account's current rate limits and pricing.
+
+Users should be informed when voice capture is active. Do not deploy voice capture in a channel without the participants' knowledge and consent.
 
 Voice capture is capped by `VOICE_MAX_SECONDS`. Without Supabase credentials, conversation history stays in process memory. With Supabase configured, Airi stores up to 12 user/assistant turns per Discord server and user. The bot uses a server-side Supabase secret key; never put it in a public client or commit it.
 
 ## Current limitations
 
 - Without Supabase, restarting the bot clears conversation context.
-- Voice transcription and TTS currently require an OpenAI API key; without it, use text chat commands.
+- Voice transcription depends on Groq API availability and usage limits.
+- Edge TTS depends on Microsoft's online service and may be throttled or changed without notice.
 - Voice receive behavior depends on Discord voice networking and should be tested in a real server.
 - Only one bot voice session per server is supported.
 - The bot does not automatically join voice channels.

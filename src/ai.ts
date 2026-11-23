@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { toFile } from "openai/uploads";
+import { EdgeTTS } from "node-edge-tts";
 import { config } from "./config.js";
 import {
   deleteConversation,
@@ -8,7 +9,7 @@ import {
   type ConversationMessage
 } from "./memory.js";
 
-// Groq exposes an OpenAI-compatible Chat Completions API.
+// Groq exposes OpenAI-compatible chat and speech-to-text endpoints.
 const groq = new OpenAI({
   apiKey: config.GROQ_API_KEY || "groq-api-key-not-configured",
   baseURL: "https://api.groq.com/openai/v1"
@@ -31,16 +32,9 @@ function historyKey(guildId: string, userId: string): string {
   return guildId + ":" + userId;
 }
 
-function getOpenAIForVoice(): OpenAI {
-  if (!config.OPENAI_API_KEY) {
-    throw new Error("Voice transcription and speech currently require OPENAI_API_KEY. Text chat uses Groq and does not need OpenAI billing.");
-  }
-  return new OpenAI({ apiKey: config.OPENAI_API_KEY });
-}
-
 async function generateReply(guildId: string, userId: string, prompt: string): Promise<string> {
   if (!config.GROQ_API_KEY) {
-    throw new Error("GROQ_API_KEY is not configured. Add a free Groq API key in Railway Variables to enable /ask.");
+    throw new Error("GROQ_API_KEY is not configured. Add a Groq API key in Railway Variables to enable chat and voice transcription.");
   }
   const key = historyKey(guildId, userId);
   const storedHistory = await loadConversation(guildId, userId);
@@ -82,24 +76,31 @@ export async function askAiri(guildId: string, userId: string, prompt: string): 
 }
 
 export async function transcribePcmWav(wav: Buffer): Promise<string> {
-  const openai = getOpenAIForVoice();
+  if (!config.GROQ_API_KEY) {
+    throw new Error("Voice transcription requires GROQ_API_KEY. Add the same Groq key used by /ask in Railway Variables.");
+  }
   const file = await toFile(wav, "discord-voice.wav", { type: "audio/wav" });
-  const result = await openai.audio.transcriptions.create({
+  const result = await groq.audio.transcriptions.create({
     file,
-    model: config.OPENAI_TRANSCRIPTION_MODEL
+    model: config.GROQ_TRANSCRIPTION_MODEL
   });
   return result.text.trim();
 }
 
 export async function synthesizeSpeech(text: string): Promise<Buffer> {
-  const openai = getOpenAIForVoice();
-  const response = await openai.audio.speech.create({
-    model: config.OPENAI_TTS_MODEL,
-    voice: config.OPENAI_TTS_VOICE as "alloy",
-    input: text.slice(0, 3500),
-    response_format: "mp3"
+  const tts = new EdgeTTS({
+    voice: config.EDGE_TTS_VOICE,
+    lang: config.EDGE_TTS_LANG,
+    outputFormat: "audio-24khz-96kbitrate-mono-mp3",
+    timeout: 20_000
   });
-  return Buffer.from(await response.arrayBuffer());
+  const chunks: Buffer[] = [];
+  for await (const chunk of tts.streamAudio(text.slice(0, 3500))) {
+    if (Buffer.isBuffer(chunk)) chunks.push(chunk);
+  }
+  const audio = Buffer.concat(chunks);
+  if (audio.length === 0) throw new Error("Edge TTS returned an empty audio stream.");
+  return audio;
 }
 
 export async function clearHistory(guildId: string, userId: string): Promise<void> {
