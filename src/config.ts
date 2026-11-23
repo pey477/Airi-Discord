@@ -9,7 +9,7 @@ const envSchema = z.object({
   OPENAI_CHAT_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_TRANSCRIPTION_MODEL: z.string().default("gpt-4o-mini-transcribe"),
   OPENAI_TTS_MODEL: z.string().default("gpt-4o-mini-tts"),
-  OPENAI_TTS_VOICE: z.string().default("nova"),
+  OPENAI_TTS_VOICE: z.enum(["alloy", "ash", "ballad", "coral", "echo", "fable", "onyx", "nova", "sage", "shimmer", "verse"]).default("nova"),
   VOICE_MAX_SECONDS: z.coerce.number().int().min(5).max(30).default(18),
   VOICE_SILENCE_MS: z.coerce.number().int().min(500).max(3000).default(1100)
 });

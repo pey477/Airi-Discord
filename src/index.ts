@@ -50,6 +50,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return;
     }
 
+    if (interaction.commandName === "ping") {
+      await interaction.reply({ content: "Pong! Airi aktif dan siap menerima pesan. 💗", flags: MessageFlags.Ephemeral });
+      return;
+    }
+
+    if (interaction.commandName === "help") {
+      await interaction.reply({
+        content: "**Perintah Airi**\\n`/ask message` — ngobrol dengan Airi lewat teks.\\n`/join` — gabungkan Airi ke voice channel kamu.\\n`/leave` — keluarkan Airi dari voice channel.\\n`/reset` — hapus konteks percakapanmu.\\n`/ping` — cek status respons bot.\\n`/help` — tampilkan bantuan ini.\\n\\nVoice bersifat turn-based dan memproses audio ketika Airi berada di voice channel.",
+        flags: MessageFlags.Ephemeral
+      });
+      return;
+    }
+
     if (interaction.commandName === "reset") {
       clearHistory(interaction.guildId, interaction.user.id);
       await interaction.reply({ content: "Riwayat percakapanmu sudah direset.", flags: MessageFlags.Ephemeral });

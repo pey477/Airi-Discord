@@ -8,6 +8,8 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
 - `/join` — join the voice channel you're currently in, transcribe speech, generate an answer, and speak it back.
 - `/leave` — leave the current voice channel.
 - `/reset` — clear your in-memory conversation history for the current server.
+- `/ping` — check bot responsiveness.
+- `/help` — show the command guide.
 - Per-server, per-user conversation context (in memory; resets when the process restarts).
 - Voice responses are queued per server to avoid overlapping playback.
 
@@ -27,6 +29,7 @@ Airi is a multilingual, anime-inspired AI companion for Discord. It supports tex
 
    ```bash
    npm install
+   npm test
    npm run typecheck
    npm run build
    ```
