@@ -35,7 +35,20 @@ export async function joinVoice(channel: VoiceBasedChannel): Promise<void> {
     guildId,
     adapterCreator: channel.guild.voiceAdapterCreator,
     selfDeaf: false,
-    selfMute: false
+    selfMute: false,
+    debug: true
+  });
+
+  // Keep the full Discord voice handshake visible in Railway logs. The normal
+  // Discord gateway can be healthy while the separate voice WebSocket/UDP path fails.
+  connection.on("debug", (message) => {
+    console.debug(`[voice:${guildId}] ${message}`);
+  });
+  connection.on("stateChange", (oldState, newState) => {
+    console.info(`[voice:${guildId}] ${oldState.status} -> ${newState.status}`);
+  });
+  connection.on("error", (error) => {
+    console.error(`[voice:${guildId}] connection error:`, error);
   });
 
   const player = createAudioPlayer({ behaviors: { noSubscriber: NoSubscriberBehavior.Pause } });
@@ -45,9 +58,12 @@ export async function joinVoice(channel: VoiceBasedChannel): Promise<void> {
 
   try {
     await entersState(connection, VoiceConnectionStatus.Ready, 20_000);
+    console.info(`[voice:${guildId}] connected and ready in channel ${channel.id}`);
   } catch (error) {
+    const state = connection.state.status;
+    console.error(`[voice:${guildId}] failed to reach Ready; final state=${state}`, error);
     leaveVoice(guildId);
-    throw error;
+    throw new Error(`Discord voice connection timed out before Ready (state: ${state}). Check the voice debug log for the failed handshake stage.`);
   }
 
   connection.receiver.speaking.on("start", (userId) => {
