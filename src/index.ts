@@ -29,11 +29,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.commandName === "join") {
-      const channel = interaction.guild?.members.me?.voice.channel
-        ? interaction.guild.members.me.voice.channel
-        : interaction.member && "voice" in interaction.member
-          ? interaction.member.voice.channel
-          : null;
+      // Join the channel of the user who invoked the command, never the bot's
+      // current channel. This also lets the bot move when another user runs /join.
+      const channel = interaction.member && "voice" in interaction.member
+        ? interaction.member.voice.channel
+        : null;
       if (!channel || !("guild" in channel)) {
         await interaction.reply({ content: "Masuk ke voice channel dulu, lalu jalankan /join ya.", flags: MessageFlags.Ephemeral });
         return;
