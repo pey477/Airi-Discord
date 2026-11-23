@@ -57,7 +57,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     if (interaction.commandName === "help") {
       await interaction.reply({
-        content: "**Perintah Airi**\\n`/ask message` — ngobrol dengan Airi lewat teks.\\n`/join` — gabungkan Airi ke voice channel kamu.\\n`/leave` — keluarkan Airi dari voice channel.\\n`/reset` — hapus konteks percakapanmu.\\n`/ping` — cek status respons bot.\\n`/help` — tampilkan bantuan ini.\\n\\nVoice bersifat turn-based dan memproses audio ketika Airi berada di voice channel.",
+        content: "**Perintah Airi**\n`/ask message` — ngobrol dengan Airi lewat teks.\n`/join` — gabungkan Airi ke voice channel kamu.\n`/leave` — keluarkan Airi dari voice channel.\n`/reset` — hapus konteks percakapanmu.\n`/ping` — cek status respons bot.\n`/help` — tampilkan bantuan ini.\n\nVoice bersifat turn-based dan memproses audio ketika Airi berada di voice channel.",
         flags: MessageFlags.Ephemeral
       });
       return;
